@@ -107,9 +107,9 @@ def geocode():
     uq_addresses = pandas.read_json(FILE_ADDRESSES, orient='records')
     print 'Unique addresses ' + str(len(uq_addresses))
     geo_addresses = pandas.read_json(FILE_ADDRESSES_GEO, orient='records')
-    gmaps = googlemaps.Client(key=keys['gmapskey'])
+    gmaps = googlemaps.Client(key=keys['gmapskey'][0])
     max_requests = 15000
-    skip_first = 113000
+    skip_first = 128000
     for ix, addr in uq_addresses.iterrows(): 
         if skip_first > 0:
             # don't check the first rows if they are already geocoded
@@ -198,12 +198,12 @@ def enrichTree():
     species = numpy.sort(species.drop_duplicates())
     
     service = apiclient.discovery.build('customsearch', 'v1',
-            developerKey=keys['searchkey'])
+            developerKey=keys['searchkey'][0])
     species_infos = []
     counter = 0
     for s in species:
         res = service.cse().list(
-            q=s, cx=keys['eolsearch'],
+            q=s, cx=keys['eolsearch'][0],
             fields='spelling/correctedQuery,items(title,link').execute()
         counter += 1
         if counter % 20 == 0:
@@ -222,7 +222,7 @@ def enrichTree():
             # no results but spelling correction, try again
             res = service.cse().list(
                 q=spec_inf['corrected'], 
-                cx=keys['eolsearch'],
+                cx=keys['eolsearch'][0],
                 fields='spelling/correctedQuery,items(title,link)').execute()
             if res.get('items'):
                 i0 = res['items'][0]
@@ -247,14 +247,14 @@ def treeAddThumbs():
     species_infos = pandas.read_json(FILE_SPECIES, orient='records')
     
     service = apiclient.discovery.build('customsearch', 'v1',
-            developerKey=keys['searchkey'])
+            developerKey=keys['searchkey'][0])
     thumbs = []
     counter = 0
     for ix, si in species_infos.iterrows(): 
         search = si['name'] if si['corrected'] == None else si['corrected']
         res = service.cse().list(
                 q=search + ' tree', 
-                cx=keys['wikisearch'],\
+                cx=keys['wikisearch'][0],\
                 fields='items(title,link),items/pagemap/cse_thumbnail',\
                 gl='en').execute()
         counter += 1
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     #cleanAddresses()
     #sumValues()
     
-    #geocode()
+    geocode()
     
     #combineRESumGeo()
     
@@ -334,7 +334,7 @@ if __name__ == "__main__":
     #combineTree()
     
     #enrichTree()
-    treeAddThumbs()
+    #treeAddThumbs()
     
 
     
