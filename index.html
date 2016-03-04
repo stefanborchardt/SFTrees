@@ -1,48 +1,76 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-
-.land {
-  fill: #ddd;
+canvas {
+  background: #eee;
 }
-
-.boundary {
-  fill: none;
-  stroke: #999;
-}
-
 </style>
-<body>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="//d3js.org/topojson.v1.min.js"></script>
+<body>
 <script>
-
-var width = 1600,
+var width = 1200,
     height = 800;
+var scale,
+    translate,
+    area; // minimum area threshold for simplification
+
+var clip = d3.geo.clipExtent()
+    .extent([[0, 0], [width, height]]);
+var simplify = d3.geo.transform({
+  point: function(x, y, z) {
+    if (z >= area) this.stream.point(x * scale + translate[0], y * scale + translate[1]);
+  }
+});
+
+var zoom = d3.behavior.zoom()
+    .translate([0, 0])
+    .scale(1)
+    .scaleExtent([1, 6]);
 
 var canvas = d3.select("body").append("canvas")
     .attr("width", width)
     .attr("height", height);
-
-var context = canvas.node().getContext("2d");
+var ctx = canvas.node().getContext("2d");
 
 var path = d3.geo.path()
-    .projection(null)
-    .context(context);
+    .projection({stream: function(s) { return simplify.stream(clip.stream(s)); }})
+    .context(ctx);
 
-d3.json("sfutc.json", function(error, sfutc) {
+d3.json("sftopo.json", function(error, sfshtr) {
   if (error) throw error;
+  topojson.presimplify(sfshtr);
+  var sftracts = topojson.feature(sfshtr, sfshtr.objects.__sftracts);
+  var sfutc = topojson.feature(sfshtr, sfshtr.objects.__sfutc);
 
-  var features = topojson.feature(sfutc, sfutc.objects.sfutc)
-  debugger
-  path(features);
-  context.stroke();
+  canvas
+      .call(zoom.on("zoom", zoomed))
+      .call(zoom.event);
+  function zoomed() {
+    translate = zoom.translate();
+    scale = zoom.scale();
+    area = .4 / scale;
+    ctx.fillStyle = "#deebf7";
+    ctx.fillRect(0, 0, width, height);
+    ctx.save();
+
+    ctx.beginPath();
+    path(sftracts);
+    ctx.lineWidth = 0.5;
+    ctx.fillStyle = "white";
+    ctx.fill()
+    ctx.stroke();
+
+    ctx.beginPath();
+    path(sfutc);
+    ctx.fillStyle = "orange";
+    ctx.fill()    
+    
+    ctx.restore();
+  }
 });
-
 d3.select(self.frameElement).style("height", height + "px");
-
 </script>
-
-<body>
 </body>
 </html>
+
