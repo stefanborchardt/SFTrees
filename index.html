@@ -75,7 +75,7 @@ var rasterLayer = svg.append("g")
 // call once to load raster images
 zoomHandler();
 
-d3.json("sfshtr_p.json", function(error, sfshtr) {
+d3.json("https://raw.githubusercontent.com/stefanborchardt/SFTrees/master/data/sfshtr.json", function(error, sfshtr) {
   if (error) throw error;
   var sftracts = topojson.feature(sfshtr, sfshtr.objects.__sftracts);
   vectorLayer.append("g")
