@@ -3,9 +3,31 @@
 <style>
 
 .vector {
-  fill-opacity: 0.2;
-  fill-color: grey;
+  fill-opacity: 0;
+  fill-color: gray;
   stroke: black;
+}
+.tooltip {
+  color: black;
+  font-family: sans-serif;
+  font-size: 80%;
+  background-color: white;
+  padding: .5em;
+  text-shadow: #f5f5f5 0 1px 0;
+  border-radius: 2px;
+  opacity: 0.8;
+  position: absolute;
+  border-style: solid;
+  border-width: 0.5px;
+}
+
+.ttname {
+  font-weight: bold;
+  display: block;
+}
+.ttinc {
+  font-weight: normal;
+  display: block;
 }
 
 </style>
@@ -22,7 +44,7 @@ var width = 960,
 var path = d3.geo.path()
     .projection(null);
 
-// contains the tile number for the coordinate
+// contains the tile number for a coordinate
 var tileM3d = d3.geo.tile()
     .size([width, height]);
 
@@ -31,13 +53,19 @@ var initialScale = 256;
 var zoomListener = d3.behavior.zoom()
     .scale(initialScale)
     .scaleExtent([256, 4096])
-    //.translate([128, 128])
     .on("zoom", zoomHandler);
 
-var svg = d3.select("body").append("svg")
+var body = d3.select("body");
+var tooltip = body.append("div")
+    .attr("class", "tooltip")
+    .attr("id", "tooltip");
+
+var svg = body.append("svg")
     .attr("width", width)
     .attr("height", height)
-    .call(zoomListener);
+    .call(zoomListener)
+    .on("mousemove", mmHandler)
+    .on("mouseout", mmHandler);
 
 var vectorLayer = svg.append("g")
     .attr("class", "vector");
@@ -50,16 +78,71 @@ zoomHandler();
 d3.json("sfshtr_p.json", function(error, sfshtr) {
   if (error) throw error;
   var sftracts = topojson.feature(sfshtr, sfshtr.objects.__sftracts);
-  vectorLayer.append("path")
-      .datum(sftracts)      
-      .attr("d", path)
-      .style("fill-opacity", function(d) {
-        return d["INC_EST"]/200000;
+  vectorLayer.append("g")
+    // transform on group to align vector with raster layer
+    .attr("transform", "rotate(" + -1.2 + ")scale(" + .953 + ")translate(" + [-111, -40] + ")")
+    .attr("id", "alignGroup")
+    .selectAll("path")
+    .data(sftracts.features) 
+    .enter()
+    .append("path")     
+    .attr("d", path)
+    .attr("data-tooltip-name", function(d) {
+      return d.properties.NAME; 
       })
-      // transform on path to align vector with raster layer
-      .attr("transform", "rotate(" + -1.2 + ")scale(" + .953 + ")translate(" + [-111, -40] + ")");
-
+    .attr("data-tooltip-inc-est", function(d) {
+      return d.properties.INC_EST;
+      })
+    .attr("id", function(d) {
+        return "_" + d.id;
+      })
+    .style("fill-opacity", function(d) {
+        return +d.properties.INC_EST/200000;
+      });
 });
+
+var idDisplayed = null;
+
+function mmHandler() {
+  // vector layer is under raster layer, so find the path element and put data in tooltip
+  var pos = d3.mouse(svg.node());
+  var posrect = svg.node().createSVGRect();
+  posrect.x = pos[0];
+  posrect.y = pos[1];
+  posrect.width = posrect.height = 1;
+  var elems = svg.node().getIntersectionList(posrect, null);
+  if (elems.length == 0 || elems[0].nodeName !== "path") {
+    tooltip.style("visibility", "hidden");
+    return;
+  } 
+  var pathElem = elems[0];
+  if (idDisplayed == pathElem.id) {
+    return;
+  } 
+  idDisplayed = pathElem.id;
+  // glow 
+  var op = pathElem.style.fillOpacity;
+  d3.select(pathElem)
+    .transition()
+    .styleTween("fill", function() { return d3.interpolate("gray", "orange");
+      })
+    .transition()
+    .styleTween("fill", function() { return d3.interpolate("orange", "gray");
+      })
+    .style("fill", null);
+
+  var name = pathElem.attributes["data-tooltip-name"].value;
+  var inc_est = pathElem.attributes["data-tooltip-inc-est"].value;
+  tooltip
+    .style({"visibility": "visible", "top": pos[1]-20+"px", "left": pos[0]+10+"px"})
+    .selectAll("span")
+    .remove();
+  tooltip  
+    .append("span").classed("ttname", true)
+    .text(name)
+    .append("span").classed("ttinc", true)
+    .text("Median Household Income: $ " + (+inc_est).toLocaleString());
+}
 
 function zoomHandler() {
 
@@ -67,7 +150,7 @@ function zoomHandler() {
       scale = zoomListener.scale();
 
   vectorLayer
-      // transform for zoom on group, the alignment stays the same; adjust scaling
+      // transform for zoom on vector layer, the alignment stays the same; adjust scaling
       .attr("transform", "translate(" + translate + ")scale(" + scale/initialScale + ")")
       .style("stroke-width", initialScale/scale);
 
