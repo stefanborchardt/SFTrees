@@ -15,6 +15,7 @@ import apiclient.discovery
 import pprint
 import difflib
 import itertools
+import geojson
 
 
 FILE_PROPERTY = 'property.json'
@@ -22,11 +23,11 @@ FILE_ADDRESSES = 'addresses.json'
 FILE_ADDRESSES_GEO = 'addresses_geo.json'
 FILE_PROPERTY_SUMMED = 'property_summed.json'
 FILE_COMBINED = 'combined.json'
+FILE_GEOJSON = 'geo_re_value.json'
 FILE_TREES = 'sftrees.json'
 FILE_SPECIES = 'treespecies.json'
 FILE_DB_SPECIES = 'dbspecies.json'
 
-FILE_SPECIES_ALL_TH = 'alltreespeciesthumbed.json'
 
 def convertExcel():
     """ Reads property assessment excel, remove records with unclear address,
@@ -156,6 +157,7 @@ def geocode():
     
 def combineRESumGeo():
     geo_addresses = pandas.read_json(FILE_ADDRESSES_GEO, orient='records')
+    geo_addresses = geo_addresses[geo_addresses['loc_type'] != 'APPROXIMATE']
     summed = pandas.read_json(FILE_PROPERTY_SUMMED, orient='records')
 
     combined = summed.merge(geo_addresses, left_on='cleaned', right_on='addr', 
@@ -165,6 +167,27 @@ def combineRESumGeo():
     combined.to_csv('combined.csv', quoting=csv.QUOTE_NONNUMERIC, 
                     encoding='UTF-8')
     return
+    
+def toGeoJson():
+    re_addr = pandas.read_json(FILE_COMBINED, orient='records')
+    geo_features = []
+    print 'addresses to convert: ' + str(len(re_addr))
+    for idx, addr in re_addr.iterrows():
+        if idx % 10000 == 0:
+            print idx
+        geometry = geojson.Point((addr.lat, addr.lng))
+        properties = {'addr': addr.formatted, 
+                      'val': addr.RE + addr.RE_Improvements}
+        gj_addr = geojson.Feature(geometry=geometry, properties=properties)
+        geo_features.append(gj_addr)
+    print 'writing geojson'
+    gj = geojson.FeatureCollection(geo_features) 
+    dump = geojson.dumps(gj)
+    with open(FILE_GEOJSON, 'w') as f:
+        f.write(dump)
+    print 'done'
+    return
+    
     
 ###################################    
     
@@ -346,41 +369,63 @@ def resetEOLLink(l):
     return l   
 
 def improveEOLLink():
-    species = pandas.read_json(FILE_SPECIES_ALL_TH, orient='records')
-    species['link'] = species['link'].apply(lambda x: 
-                        resetEOLLink(x))    
-    
+    db = pandas.read_json(FILE_DB_SPECIES, orient='records') 
+    db.drop(['link', 'title'], axis=1, inplace=True)
     service = apiclient.discovery.build('customsearch', 'v1',
             developerKey=keys['searchkey'][0])
-    species_infos = []
+    thumbs = []
     counter = 0
-    for ix, s in species.iterrows():
-        if s['link'] or not s['sc_name_corr']:
-            continue
+    for _, si in db.iterrows(): 
+        search = si['sc_name_corr']
         res = service.cse().list(
-            q=s['sc_name_corr'], cx=keys['eolsearch'][0],
-            fields='items(title,link)').execute()
+                q=search + ' tree', 
+                cx=keys['eolsearch'][0],
+                fields='items(title,link)')\
+                .execute()
         counter += 1
         if counter % 20 == 0:
             # show progress
             print counter
-        spec_inf = {}
-        spec_inf = s
-        
-        if res.get('items'):
-            # take first result
-            i0 = res['items'][0]
-            print i0['link']
-            spec_inf['link'] = i0['link'] 
-            spec_inf['title'] = i0['title']  
-        else:
-            print s
+        items = res.get('items')
+        if not items:
+            print 'NO RESULT: ' + search
             pprint.pprint(res)
-        species_infos.append(spec_inf)
-    species_infos = pandas.DataFrame(species_infos)
-    print len(species.merge(species_infos, on='sc_name_corr', how='inner'))
-    species.update(species_infos)   
-    species.to_json(FILE_SPECIES_ALL_TH, orient='records')    
+            continue
+
+        titles = []
+        for item in items:
+            if re.search('pages\\/[0-9]+\\/overview$', item['link']):
+                titles.append(item['title'])
+        if len(titles) == 0:
+            print 'NO USABLE RESULT: ' + search
+            continue
+        
+        titles_search = map(lambda x: x.split(' - ')[:2], titles)
+        titles_search = list(itertools.chain.from_iterable(titles_search))
+        titles_search = map(lambda x: x.split('(')[0].strip(), titles_search)
+        
+        best_title = difflib.get_close_matches(search, titles_search, n=1, cutoff=.7)
+        if len(best_title) == 0 and len(titles) > 0:
+            continue
+
+        th = {}
+        th['sc_name_corr'] = search
+        th['corrected'] = best_title[0]
+        for t in titles:
+            if best_title[0] in t:
+                for item in items:
+                    if t == item['title']:
+                        th['link_eol'] = item['link'] 
+                        th['title_eol'] = item['title']
+        
+        thumbs.append(th)
+
+    thumbs = pandas.DataFrame(thumbs)
+
+    db = db.merge(thumbs, on='sc_name_corr', how='left')
+    #db.to_json(FILE_DB_SPECIES, orient='records') 
+    #db.to_csv('species3.csv', quoting=csv.QUOTE_NONNUMERIC, 
+     #               encoding='UTF-8')     
     return
     
     
@@ -452,68 +497,12 @@ if __name__ == "__main__":
     
     #sumValues()
     #combineRESumGeo()
+    toGeoJson()
     
     ##cleanTrees()
     #createSpeciesList()
     #lookupSpecies()    
-
-    db = pandas.read_json(FILE_DB_SPECIES, orient='records') 
-    db.drop(['link', 'title'], axis=1, inplace=True)
-    service = apiclient.discovery.build('customsearch', 'v1',
-            developerKey=keys['searchkey'][0])
-    thumbs = []
-    counter = 0
-    for _, si in db.iterrows(): 
-        search = si['sc_name_corr']
-        res = service.cse().list(
-                q=search + ' tree', 
-                cx=keys['eolsearch'][0],
-                fields='items(title,link)')\
-                .execute()
-        counter += 1
-        if counter % 20 == 0:
-            # show progress
-            print counter
-        items = res.get('items')
-        if not items:
-            print 'NO RESULT: ' + search
-            pprint.pprint(res)
-            continue
-
-        titles = []
-        for item in items:
-            if re.search('pages\\/[0-9]+\\/overview$', item['link']):
-                titles.append(item['title'])
-        if len(titles) == 0:
-            print 'NO USABLE RESULT: ' + search
-            continue
-        
-        titles_search = map(lambda x: x.split(' - ')[:2], titles)
-        titles_search = list(itertools.chain.from_iterable(titles_search))
-        titles_search = map(lambda x: x.split('(')[0].strip(), titles_search)
-        
-        best_title = difflib.get_close_matches(search, titles_search, n=1, cutoff=.7)
-        if len(best_title) == 0 and len(titles) > 0:
-            continue
-
-        th = {}
-        th['sc_name_corr'] = search
-        th['corrected'] = best_title[0]
-        for t in titles:
-            if best_title[0] in t:
-                for item in items:
-                    if t == item['title']:
-                        th['link_eol'] = item['link'] 
-                        th['title_eol'] = item['title']
-        
-        thumbs.append(th)
-
-    thumbs = pandas.DataFrame(thumbs)
-
-    db = db.merge(thumbs, on='sc_name_corr', how='left')
-    #db.to_json(FILE_DB_SPECIES, orient='records') 
-    #db.to_csv('species3.csv', quoting=csv.QUOTE_NONNUMERIC, 
-     #               encoding='UTF-8')    
+  
 
     #combineTree()
     
