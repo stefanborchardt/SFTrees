@@ -51,7 +51,7 @@ controls.staticMoving = true;
 
 
 var loader = new THREE.TextureLoader();
-loader.crossOrign = '';
+//loader.crossOrign = '';
 
 loader.load('https://storage.googleapis.com/sftrees3d/sftrees_map.png', function(texture) {
     var planeMat = new THREE.MeshBasicMaterial({
