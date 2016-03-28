@@ -66,7 +66,7 @@ loader.load('https://storage.googleapis.com/sftrees3d/sftrees_map.png', function
 
 });
 
-d3.csv('data.csv').get(function(error, data) {
+d3.csv('https://storage.googleapis.com/sftrees3d/data.csv').get(function(error, data) {
     if (error) throw error;
 
     var sceneWAsp = boundsWidth / sceneWidth;
