@@ -1,0 +1,167 @@
+html, body {
+	height: 100%;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	resize: none;
+}
+
+body {
+	background-image: url("https://storage.googleapis.com/sftrees3d/mtsutro.jpg");
+	background-size: auto 100%;
+	background-position: -300px 0px;
+}
+
+h1 {
+	margin-left: 20%;
+	vertical-align: middle;
+}
+
+.navlink {
+	color: black;
+	margin-left: 20%;
+}
+
+#cont-wrapper {
+	padding: 0;
+	position:relative;
+	margin: auto;
+	width: 80%;
+	height: 75%;
+	resize: none;
+	overflow: hidden;
+}
+
+#cont {
+	margin: auto;
+	width: 100%;
+	height: 100%;
+	resize: none;
+	overflow: hidden;
+	background-color: white;
+	position:relative;
+}
+
+#nav {
+	margin:auto;
+	width: 80%;
+	height: 20%;
+	resize: none;
+	border-bottom: 3px solid #ccc;
+	overflow: hidden;
+}
+
+#next {
+	position: absolute;
+	top: 52%;
+	left: 91%;
+	width: 8%;
+	justify-content: center;
+}
+.nextlink {
+	font-size: 100px;
+	font-weight: bold;
+	color: white;
+	opacity: 0.8;
+	text-decoration: none;
+}
+
+.swap {
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.progress-meter .background {
+  fill: #ccc;
+}
+
+.progress-meter .foreground {
+  fill: #000;
+}
+
+.progress-meter text {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+
+#details {
+	position: absolute;
+	float: right;
+	right:0;
+	top: 0;
+	background: rgba(255, 255, 255, 0.7);
+	width: 160px;
+	height: 80px;
+	padding: 10px;
+	justify-content: center;
+	font-size: 16px;
+}
+
+.detail {
+	padding-top: 5px;
+}
+
+#random {
+	position: absolute;
+	float: right;
+	right:0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.7);
+	width: 160px;
+	height: 80px;
+	padding: 10px;
+	justify-content: center;
+	font-size: 16px;
+}
+.randlink {
+	color: black;
+	margin-right: 10px;
+}
+.randlink::after {
+  	content: ' ';  
+}
+
+.box {
+  font: 10px sans-serif;
+}
+
+.box line,
+.box rect,
+.box circle {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+.box .center {
+  stroke-dasharray: 3,3;
+}
+.box .outlier {
+  fill: none;
+  stroke: #ccc;
+}
+
+.dot {
+	fill: none; 
+	stroke: #006837;
+	stroke-width: 0.2pt;
+}
+
+.y.axis {
+  font-size: 12px;
+}
+
+.x.axis {
+  font-size: 16px;
+}
+ 
+.y.axis path,
+.y.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+ 
+.x.axis path { 
+  display: none;
+}
