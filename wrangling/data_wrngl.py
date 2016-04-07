@@ -159,6 +159,7 @@ def combineRESumGeo():
     geo_addresses = pandas.read_json(FILE_ADDRESSES_GEO, orient='records')
     geo_addresses = geo_addresses[geo_addresses['loc_type'] != 'APPROXIMATE']
     summed = pandas.read_json(FILE_PROPERTY_SUMMED, orient='records')
+    summed = summed[summed['RE'] + summed['RE_Improvements'] >= 20000]
 
     combined = summed.merge(geo_addresses, left_on='cleaned', right_on='addr', 
                          how='inner')
@@ -175,9 +176,10 @@ def toGeoJson():
     for idx, addr in re_addr.iterrows():
         if idx % 10000 == 0:
             print idx
-        geometry = geojson.Point((addr.lat, addr.lng))
+        geometry = geojson.Point((addr.lng, addr.lat))
         properties = {'addr': addr.formatted, 
-                      'val': addr.RE + addr.RE_Improvements}
+                      're': addr.RE,
+                      'rei': addr.RE_Improvements}
         gj_addr = geojson.Feature(geometry=geometry, properties=properties)
         geo_features.append(gj_addr)
     print 'writing geojson'
@@ -496,7 +498,7 @@ if __name__ == "__main__":
     # updateSpeciesDB()
     
     #sumValues()
-    #combineRESumGeo()
+    combineRESumGeo()
     toGeoJson()
     
     ##cleanTrees()
