@@ -458,7 +458,7 @@ function toRender(percent) {
     render();
 }
 
-d3.csv("datar.csv")
+d3.csv("https://storage.googleapis.com/sftrees3d/datar.csv")
     .on("beforesend", function() {
         var loader = new THREE.TextureLoader();
         loader.crossOrign = '';
