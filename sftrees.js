@@ -22,29 +22,25 @@ var colorScale = d3.scale.linear()
     .domain([transform(20000), transform(73500), transform(425000), transform(1346000), transform(8000000)])
     .range(['#ffffff', '#ffeda0', '#feb24c', '#f03b20', '#000000']);
 
+
 var scene, octree;
 
-function initScene() {
-    // called by makebars
+var ambLight = new THREE.AmbientLight(0xcccccc);
+// white light from above to highlight tops of bars
+var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(0, 0, 100).normalize();
+
+function emptyScene() {
     scene = new THREE.Scene();
-    var ambLight = new THREE.AmbientLight(0xcccccc);
     scene.add(ambLight);
-
-    // white light from above to highlight tops of bars
-    var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(0, 0, 100).normalize();
     scene.add(dirLight);
-
-    // should by now have been loaded
-    scene.add(planeMesh);
-
-    // for raycasting
     octree = new THREE.Octree({overlapPct: 0.2});
 }
 
-
 function makeBars(data, percent) {
-    initScene();
+
+    emptyScene();
+
     var sceneWAsp = boundsWidth / sceneWidth;
     var sceneHAsp = boundsHeight / sceneHeight;
 
@@ -153,7 +149,6 @@ function onMouseMove(event) {
 
 }
 
-var planeMesh;
 var aniFrameId = null;
 
 function animate() {
@@ -165,6 +160,8 @@ function animate() {
 
 function render() {
     
+    scene.add(planeMesh);
+
     domContDiv.appendChild(renderer.domElement);
     domContDiv.addEventListener('mousemove', onMouseMove, false);
     
@@ -383,15 +380,14 @@ function resetDivs() {
     for (var i = 0; i < divs.length; i++) {
         divs[i].style.display = "none";
     }
-    var kids = domContDiv.childNodes;
-    for (var i = 0; i < kids.length; i++) {
-        domContDiv.removeChild(kids[i]);
-    }
     if (aniFrameId != null) {
         cancelAnimationFrame(aniFrameId);
         aniFrameId = null;
     }
-
+    var kids = domContDiv.childNodes;
+    for (var i = 0; i < kids.length; i++) {
+        domContDiv.removeChild(kids[i]);
+    }
 }
 
 function toIntro() {
@@ -432,6 +428,7 @@ function toPlot() {
 }
 
 var data;
+var planeMesh;
 var firstRun = true;
 
 function toRender(percent) {
@@ -448,12 +445,14 @@ function toRender(percent) {
     render();
 }
 
-d3.csv("https://storage.googleapis.com/sftrees3d/datar.csv")
+var baseUrl = "https://storage.googleapis.com/sftrees3d/";
+//var baseUrl = "";
+
+d3.csv(baseUrl + "datar.csv")
     .on("beforesend", function() {
         var loader = new THREE.TextureLoader();
-        loader.crossOrign = '';
-
-        loader.load('https://storage.googleapis.com/sftrees3d/sftrees_map.png', function(texture) {
+        loader.crossOrign = "";
+        loader.load(baseUrl + "sftrees_map.png", function(texture) {
             var planeMat = new THREE.MeshBasicMaterial({
                 color: 0xffffff,
                 map: texture,
@@ -461,6 +460,7 @@ d3.csv("https://storage.googleapis.com/sftrees3d/datar.csv")
             });
             var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
             planeMesh = new THREE.Mesh(planeG, planeMat);
+            
         });    
     })
     .on("progress", function() {
