@@ -35,6 +35,9 @@ function initScene() {
     dirLight.position.set(0, 0, 100).normalize();
     scene.add(dirLight);
 
+    // should by now have been loaded
+    scene.add(planeMesh);
+
     // for raycasting
     octree = new THREE.Octree({overlapPct: 0.2});
 }
@@ -154,16 +157,18 @@ var planeMesh;
 var aniFrameId = null;
 
 function animate() {
+    controls.update();
     aniFrameId = requestAnimationFrame(animate);
     renderer.render(scene, camera);
+    octree.update();
 }
+
 function render() {
     
     domContDiv.appendChild(renderer.domElement);
     domContDiv.addEventListener('mousemove', onMouseMove, false);
-    controls.update();
+    
     animate();
-    octree.update();
 
     // display infoboxes
     contentDiv.selectAll("#details")
@@ -389,21 +394,12 @@ function resetDivs() {
 
 }
 
-
-
 function toIntro() {
     resetDivs();
     var next = document.getElementById("nxtlnk");
     next.setAttribute("onclick", "toPlot();return false;");
     var div = document.getElementById("intro")
     div.style.display = "block";
-}
-
-function toOutro() {
-    resetDivs();
-    var div = document.getElementById("outro")
-    div.style.display = "block";
-
 }
 
 function toDesign() {
@@ -433,9 +429,6 @@ function toPlot() {
     next.setAttribute("onclick", "toRender(20);return false;");
 
     showPlot(plotData, regData);
-
-    // should by now have been loaded
-    scene.add(planeMesh);
 }
 
 var data;
@@ -444,11 +437,8 @@ var firstRun = true;
 function toRender(percent) {
     resetDivs();
     var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toOutro();return false;");
 
-    //contentDiv.select("svg")
-    //    .transition()
-     //   .remove();
+    next.style.display = "none";
 
     if (firstRun) {
         firstRun = false;
