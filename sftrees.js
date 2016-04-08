@@ -7,11 +7,28 @@ var width = domContDiv.clientWidth,
     height = domContDiv.clientHeight;
 
 /*======================== build 3D scene ====================================*/
+
 var bounds = [-122.5149, 37.7070, -122.359, 37.8120], // EPSG:4326 left, bottom, right, top
     boundsWidth = bounds[2] - bounds[0],
     boundsHeight = bounds[3] - bounds[1],
     sceneWidth = 2048,
     sceneHeight = sceneWidth / (boundsWidth / boundsHeight);
+
+var planeMesh;
+var baseUrl = "https://storage.googleapis.com/sftrees3d/";
+//var baseUrl = "";
+var loader = new THREE.TextureLoader();
+    loader.crossOrigin = "";
+    loader.load(baseUrl + "sftrees_map.png", function(texture) {
+        var planeMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: texture,
+            opacity: 0.3
+        });
+        var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
+        planeMesh = new THREE.Mesh(planeG, planeMat);
+        
+    });
 
 function transform(value) {
     return Math.pow(value / 425000.0, 0.5);
@@ -428,7 +445,6 @@ function toPlot() {
 }
 
 var data;
-var planeMesh;
 var firstRun = true;
 
 function toRender(percent) {
@@ -445,24 +461,8 @@ function toRender(percent) {
     render();
 }
 
-var baseUrl = "https://storage.googleapis.com/sftrees3d/";
-//var baseUrl = "";
 
 d3.csv(baseUrl + "datar.csv")
-    .on("beforesend", function() {
-        var loader = new THREE.TextureLoader();
-        loader.crossOrigin = "";
-        loader.load(baseUrl + "sftrees_map.png", function(texture) {
-            var planeMat = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                map: texture,
-                opacity: 0.3
-            });
-            var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
-            planeMesh = new THREE.Mesh(planeG, planeMat);
-            
-        });    
-    })
     .on("progress", function() {
         var ip = d3.interpolate(progress, d3.event.loaded / d3.event.total);
         d3.transition().tween("progress", function() {
