@@ -102,7 +102,7 @@ var camera = new THREE.OrthographicCamera(sceneWidth / -2, sceneWidth / 2, scene
 camera.position.set(0, -5, 10);
 camera.zoom = 3;
 
-var controls = new THREE.OrthographicTrackballControls(camera);
+var controls = new THREE.OrthographicTrackballControls(camera, domContDiv);
 controls.rotateSpeed = 0.7;
 controls.zoomSpeed = 1.0;
 controls.staticMoving = true;
@@ -127,18 +127,17 @@ function onMouseMove(event) {
     var octreeResults = octree.search(raycaster.ray.origin, raycaster.ray.far, true, raycaster.ray.direction);
 
     var hits = [];
-    // lookup meshes in scene
+    // lookup meshes for candidates in scene
     octreeResults.forEach( function(element, index) {
         hits.push(scene.getObjectById(element.object.id));
     });
     // find the mesh(es) pointed at
     var intersections = raycaster.intersectObjects(hits);
-    console.log(hits.length);
     var intsLen = intersections.length;
     if (intsLen > 0) {
         var idx = 0;
         if (intsLen > 1) {
-            // different addresses geocoded at one location
+            // different addresses geocoded at one location, flicker
             idx = Math.floor(Math.random() * intsLen);
         } 
         // manage glow of selected box
@@ -179,8 +178,8 @@ function render() {
     
     scene.add(planeMesh);
 
-    domContDiv.appendChild(renderer.domElement);
-    domContDiv.addEventListener('mousemove', onMouseMove, false);
+    var canvas = domContDiv.appendChild(renderer.domElement);
+    canvas.addEventListener('mousemove', onMouseMove, false);
     
     animate();
 
@@ -203,7 +202,7 @@ function render() {
         .attr("href", "")
         .attr("class", "randlink")
         .attr("onclick", "toRender(10);return false;")
-        .text("10%");
+        .text("(fast)\u00A010%");
     randDiv.append("a")
         .attr("href", "")
         .attr("class", "randlink")
@@ -223,7 +222,7 @@ function render() {
         .attr("href", "")
         .attr("class", "randlink")
         .attr("onclick", "toRender(100);return false;")
-        .text("100% (slow)");
+        .text("100%\u00A0(slow)");
 
 }
 
@@ -401,16 +400,18 @@ function resetDivs() {
         cancelAnimationFrame(aniFrameId);
         aniFrameId = null;
     }
-    var kids = domContDiv.childNodes;
-    for (var i = 0; i < kids.length; i++) {
+    var kids = domContDiv.children;
+    for (var i = kids.length-1; i >= 0; i--) {
         domContDiv.removeChild(kids[i]);
     }
+    var next = document.getElementById("nxtlnk");
+    next.style.display = "block";
+    next.setAttribute("onclick", "toIntro();return false;");
+    return next;
 }
 
 function toIntro() {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toPlot();return false;");
+    resetDivs().setAttribute("onclick", "toPlot();return false;");
     var div = document.getElementById("intro")
     div.style.display = "block";
 }
@@ -437,10 +438,8 @@ var plotData;
 var regData; 
 
 function toPlot() {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toRender(20);return false;");
-
+    resetDivs().setAttribute("onclick", "toRender(20);return false;");
+    
     showPlot(plotData, regData);
 }
 
@@ -448,10 +447,9 @@ var data;
 var firstRun = true;
 
 function toRender(percent) {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-
-    next.style.display = "none";
+    resetDivs().setAttribute("onclick", "toIntro();return false;");
+    var link = document.getElementById("nxtlnk");
+    link.style.display = "none";
 
     if (firstRun) {
         firstRun = false;
@@ -486,9 +484,8 @@ d3.csv(baseUrl + "datar.csv")
         regData = ppData[1];
 
         meter.transition().attr("transform", "scale(0)");
-        d3.select("svg").transition().remove();
+        d3.select("svg").transition().remove().each("end", toIntro);
 
-        toIntro();
         
     });
 
