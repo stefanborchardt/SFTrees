@@ -451,7 +451,7 @@ var baseUrl = "https://storage.googleapis.com/sftrees3d/";
 d3.csv(baseUrl + "datar.csv")
     .on("beforesend", function() {
         var loader = new THREE.TextureLoader();
-        loader.crossOrign = "";
+        loader.crossOrigin = "";
         loader.load(baseUrl + "sftrees_map.png", function(texture) {
             var planeMat = new THREE.MeshBasicMaterial({
                 color: 0xffffff,
