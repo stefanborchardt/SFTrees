@@ -7,11 +7,28 @@ var width = domContDiv.clientWidth,
     height = domContDiv.clientHeight;
 
 /*======================== build 3D scene ====================================*/
+
 var bounds = [-122.5149, 37.7070, -122.359, 37.8120], // EPSG:4326 left, bottom, right, top
     boundsWidth = bounds[2] - bounds[0],
     boundsHeight = bounds[3] - bounds[1],
     sceneWidth = 2048,
     sceneHeight = sceneWidth / (boundsWidth / boundsHeight);
+
+var planeMesh;
+var baseUrl = "https://storage.googleapis.com/sftrees3d/";
+//var baseUrl = "";
+var loader = new THREE.TextureLoader();
+    loader.crossOrigin = "";
+    loader.load(baseUrl + "sftrees_map.png", function(texture) {
+        var planeMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: texture,
+            opacity: 0.3
+        });
+        var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
+        planeMesh = new THREE.Mesh(planeG, planeMat);
+        
+    });
 
 function transform(value) {
     return Math.pow(value / 425000.0, 0.5);
@@ -22,26 +39,25 @@ var colorScale = d3.scale.linear()
     .domain([transform(20000), transform(73500), transform(425000), transform(1346000), transform(8000000)])
     .range(['#ffffff', '#ffeda0', '#feb24c', '#f03b20', '#000000']);
 
+
 var scene, octree;
 
-function initScene() {
-    // called by makebars
+var ambLight = new THREE.AmbientLight(0xcccccc);
+// white light from above to highlight tops of bars
+var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(0, 0, 100).normalize();
+
+function emptyScene() {
     scene = new THREE.Scene();
-    var ambLight = new THREE.AmbientLight(0xcccccc);
     scene.add(ambLight);
-
-    // white light from above to highlight tops of bars
-    var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(0, 0, 100).normalize();
     scene.add(dirLight);
-
-    // for raycasting
     octree = new THREE.Octree({overlapPct: 0.2});
 }
 
-
 function makeBars(data, percent) {
-    initScene();
+
+    emptyScene();
+
     var sceneWAsp = boundsWidth / sceneWidth;
     var sceneHAsp = boundsHeight / sceneHeight;
 
@@ -86,7 +102,7 @@ var camera = new THREE.OrthographicCamera(sceneWidth / -2, sceneWidth / 2, scene
 camera.position.set(0, -5, 10);
 camera.zoom = 3;
 
-var controls = new THREE.OrthographicTrackballControls(camera);
+var controls = new THREE.OrthographicTrackballControls(camera, domContDiv);
 controls.rotateSpeed = 0.7;
 controls.zoomSpeed = 1.0;
 controls.staticMoving = true;
@@ -111,18 +127,17 @@ function onMouseMove(event) {
     var octreeResults = octree.search(raycaster.ray.origin, raycaster.ray.far, true, raycaster.ray.direction);
 
     var hits = [];
-    // lookup meshes in scene
+    // lookup meshes for candidates in scene
     octreeResults.forEach( function(element, index) {
         hits.push(scene.getObjectById(element.object.id));
     });
     // find the mesh(es) pointed at
     var intersections = raycaster.intersectObjects(hits);
-    console.log(hits.length);
     var intsLen = intersections.length;
     if (intsLen > 0) {
         var idx = 0;
         if (intsLen > 1) {
-            // different addresses geocoded at one location
+            // different addresses geocoded at one location, flicker
             idx = Math.floor(Math.random() * intsLen);
         } 
         // manage glow of selected box
@@ -150,20 +165,23 @@ function onMouseMove(event) {
 
 }
 
-var planeMesh;
 var aniFrameId = null;
 
 function animate() {
+    controls.update();
     aniFrameId = requestAnimationFrame(animate);
     renderer.render(scene, camera);
+    octree.update();
 }
+
 function render() {
     
-    domContDiv.appendChild(renderer.domElement);
-    domContDiv.addEventListener('mousemove', onMouseMove, false);
-    controls.update();
+    scene.add(planeMesh);
+
+    var canvas = domContDiv.appendChild(renderer.domElement);
+    canvas.addEventListener('mousemove', onMouseMove, false);
+    
     animate();
-    octree.update();
 
     // display infoboxes
     contentDiv.selectAll("#details")
@@ -184,7 +202,7 @@ function render() {
         .attr("href", "")
         .attr("class", "randlink")
         .attr("onclick", "toRender(10);return false;")
-        .text("10%");
+        .text("(fast)\u00A010%");
     randDiv.append("a")
         .attr("href", "")
         .attr("class", "randlink")
@@ -204,7 +222,7 @@ function render() {
         .attr("href", "")
         .attr("class", "randlink")
         .attr("onclick", "toRender(100);return false;")
-        .text("100% (slow)");
+        .text("100%\u00A0(slow)");
 
 }
 
@@ -373,53 +391,45 @@ var text = meter
 
 /*======================== preloading, display ====================================*/
 
-function resetDivs() {
+function resetDivsGetNext() {
     var divs = document.getElementsByClassName("swap")
     for (var i = 0; i < divs.length; i++) {
         divs[i].style.display = "none";
-    }
-    var kids = domContDiv.childNodes;
-    for (var i = 0; i < kids.length; i++) {
-        domContDiv.removeChild(kids[i]);
     }
     if (aniFrameId != null) {
         cancelAnimationFrame(aniFrameId);
         aniFrameId = null;
     }
-
+    var kids = domContDiv.children;
+    for (var i = kids.length-1; i >= 0; i--) {
+        domContDiv.removeChild(kids[i]);
+    }
+    var next = document.getElementById("nxtlnk");
+    next.style.display = "block";
+    next.setAttribute("onclick", "toIntro();return false;");
+    return next;
 }
 
-
-
 function toIntro() {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toPlot();return false;");
+    resetDivsGetNext().setAttribute("onclick", "toPlot();return false;");
     var div = document.getElementById("intro")
     div.style.display = "block";
 }
 
-function toOutro() {
-    resetDivs();
-    var div = document.getElementById("outro")
-    div.style.display = "block";
-
-}
-
 function toDesign() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("design")
     div.style.display = "block";
 }
 
 function toLicenses() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("licenses")
     div.style.display = "block";
 }
 
 function toFeedback() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("feedback")
     div.style.display = "block";
 }
@@ -428,27 +438,16 @@ var plotData;
 var regData; 
 
 function toPlot() {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toRender(20);return false;");
-
+    resetDivsGetNext().setAttribute("onclick", "toRender(20);return false;");
+    
     showPlot(plotData, regData);
-
-    // should by now have been loaded
-    scene.add(planeMesh);
 }
 
 var data;
 var firstRun = true;
 
 function toRender(percent) {
-    resetDivs();
-    var next = document.getElementById("nxtlnk");
-    next.setAttribute("onclick", "toOutro();return false;");
-
-    //contentDiv.select("svg")
-    //    .transition()
-     //   .remove();
+    resetDivsGetNext().style.display = "none";
 
     if (firstRun) {
         firstRun = false;
@@ -458,21 +457,8 @@ function toRender(percent) {
     render();
 }
 
-d3.csv("https://storage.googleapis.com/sftrees3d/datar.csv")
-    .on("beforesend", function() {
-        var loader = new THREE.TextureLoader();
-        loader.crossOrign = '';
 
-        loader.load('https://storage.googleapis.com/sftrees3d/sftrees_map.png', function(texture) {
-            var planeMat = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                map: texture,
-                opacity: 0.3
-            });
-            var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
-            planeMesh = new THREE.Mesh(planeG, planeMat);
-        });    
-    })
+d3.csv(baseUrl + "datar.csv")
     .on("progress", function() {
         var ip = d3.interpolate(progress, d3.event.loaded / d3.event.total);
         d3.transition().tween("progress", function() {
@@ -496,9 +482,8 @@ d3.csv("https://storage.googleapis.com/sftrees3d/datar.csv")
         regData = ppData[1];
 
         meter.transition().attr("transform", "scale(0)");
-        d3.select("svg").transition().remove();
+        d3.select("svg").transition().remove().each("end", toIntro);
 
-        toIntro();
         
     });
 
