@@ -1,5 +1,5 @@
 wrangling/keyfile.csv
 raw/
-urbanforest/
 data/addresses_geo.json
-wrangling/addresses_geo.json
+wrangling/*.json
+wrangling/*.shp
