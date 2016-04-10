@@ -420,6 +420,24 @@ function toDesign() {
     resetDivsGetNext();
     var div = document.getElementById("design")
     div.style.display = "block";
+    // set serc to images - lazy loading
+    d3.select("#design")
+        .selectAll("img")
+        .each(function(d, i){
+            var urls = [
+                "sketches/1_sftrees.png",
+                "sketches/3_tree_canopy.png",
+                "sketches/4_tree_canopy_simplified_vec.png",
+                "sketches/5_combined_topojson.png",
+                "sketches/7_iteration1.png",
+                "sketches/2_property_values_inprogress.png",
+                "sketches/8_re_value.png",
+                "sketches/9_canopy_before.png",
+                "sketches/10_canopy_simplified.png",
+                "sketches/11_tree_density.png",
+                "sketches/12_regression.png"];
+            this.setAttribute("src", baseUrl + urls[i]);
+        });
 }
 
 function toLicenses() {
