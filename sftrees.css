@@ -8,6 +8,7 @@ body {
 	background-image: url("https://storage.googleapis.com/sftrees3d/mtsutro.jpg");
 	background-size: auto 100%;
 	background-position: -300px 0px;
+	margin: 0;
 }
 
 h1 {
@@ -35,10 +36,11 @@ h1 {
 	width: 100%;
 	height: 100%;
 	resize: none;
-	overflow: hidden;
 	background-color: white;
 	position:relative;
+	opacity: none;
 }
+
 
 #nav {
 	margin:auto;
@@ -51,7 +53,7 @@ h1 {
 
 #next {
 	position: absolute;
-	top: 52%;
+	top: 49%;
 	left: 91%;
 	width: 8%;
 	justify-content: center;
@@ -73,6 +75,17 @@ h1 {
 	margin-right: 20%;
 	margin-top: 10%;
 	margin-bottom: 10%;
+	height: 65%;
+	overflow: auto;
+}
+
+
+.swap div {
+	margin-top: 1em;
+}
+
+.swap img {
+	width: 100%;
 }
 
 .progress-meter .background {
