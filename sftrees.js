@@ -391,7 +391,7 @@ var text = meter
 
 /*======================== preloading, display ====================================*/
 
-function resetDivs() {
+function resetDivsGetNext() {
     var divs = document.getElementsByClassName("swap")
     for (var i = 0; i < divs.length; i++) {
         divs[i].style.display = "none";
@@ -411,25 +411,25 @@ function resetDivs() {
 }
 
 function toIntro() {
-    resetDivs().setAttribute("onclick", "toPlot();return false;");
+    resetDivsGetNext().setAttribute("onclick", "toPlot();return false;");
     var div = document.getElementById("intro")
     div.style.display = "block";
 }
 
 function toDesign() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("design")
     div.style.display = "block";
 }
 
 function toLicenses() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("licenses")
     div.style.display = "block";
 }
 
 function toFeedback() {
-    resetDivs();
+    resetDivsGetNext();
     var div = document.getElementById("feedback")
     div.style.display = "block";
 }
@@ -438,7 +438,7 @@ var plotData;
 var regData; 
 
 function toPlot() {
-    resetDivs().setAttribute("onclick", "toRender(20);return false;");
+    resetDivsGetNext().setAttribute("onclick", "toRender(20);return false;");
     
     showPlot(plotData, regData);
 }
@@ -447,9 +447,7 @@ var data;
 var firstRun = true;
 
 function toRender(percent) {
-    resetDivs().setAttribute("onclick", "toIntro();return false;");
-    var link = document.getElementById("nxtlnk");
-    link.style.display = "none";
+    resetDivsGetNext().style.display = "none";
 
     if (firstRun) {
         firstRun = false;
