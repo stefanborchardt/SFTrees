@@ -33,27 +33,27 @@
 	<div id="design" class="swap">
 		<div>
 			When browsing for data sources I discovered the inventory of street trees of San Francisco and got curious how they influence their surroundings in terms of money. This is the first look I got:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/1_sftrees.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/1_sftrees.png" crossorigin="">
 			You can see the species and age of the street trees encoded as color and size. I spent some time learning more about street trees and to clean the data.
 		</div>
 		<div>
 			I noticed that trees in parks were missing and during further research had to learn that only about 20% of all trees are street trees. Luckily, I found non-discriminatory data about the tree canopy, which included parks, private trees and the street trees. It has a much finer resolution that the usual land coverage satellite images, because it was produced using LiDAR and aerial photography. 
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/3_tree_canopy.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/3_tree_canopy.png" crossorigin="">
 			The data came in shapefile format, which is common in geographical information systems. I used TileMill to create the image above.
 		</div>
 		<div>
 			Because the data is so detailed it is also rather large. I had to simplify the shapes and reduce the precision so that the file could be load in the browser with D3.
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/4_tree_canopy_simplified_vec.png" crossorigin=""> 
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/4_tree_canopy_simplified_vec.png" crossorigin=""> 
 			For this processing I used Mapshaper and TopoJson command line tools. I was able to display the data with D3 then.
 		</div>
 		<div>
 			My next step was to get data on household income from the American Community Survey. Unfortunately, the spatial reference systems of the census tracts, the San Francisco shoreline (census tracts extend into the ocean) and the tree canopy did not match. I used GDAL's ogr2ogr to harmonize the reference systems. Now I put everything together - and it was incredibly slow.
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/5_combined_topojson.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/5_combined_topojson.png" crossorigin="">
 			(The picture does not show the income data.)
 		</div>
 		<div>
 			I went back to TileMill and used mbutil to extract a raster tile quadtree from the unsimplified vector data. That way only the data on display had to be loaded. 
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/7_iteration1.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/7_iteration1.png" crossorigin="">
 			This is the result of the first iteration. From feedback I learnt that the people demand
 			<ul>
 				<li>detailed numbers about the tree canopy, not only the image</li>
@@ -63,28 +63,28 @@
 		</div>
 		<div>
 			There is data available on the value of each property in San Francisco from the Property Assessment Roll. Cleaning the data was somewhat challenging because addresses seem to be entered manually, contained indicators for vacant lots and apartment numbers. Additionally, I had to geocode the addresses. Here is a snapshot of what I had while the geocoding progressed.
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/2_property_values_inprogress.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/2_property_values_inprogress.png" crossorigin="">
 			After cleaning, geocoding, and merging apartments, I had about 150,000 properties with information about the assessed value of the real estate and the improvements. I removed properties of less than $ 20,000 and the top 1%. There are more values in the assessment roll, which I discarded after learning about the property assessment process.
 		</div>
 		<div>
 			Now I wanted to bring two variables on a map. Because of the density of the properties I could not use size beside color, so I decided to go up:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/8_re_value.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/8_re_value.png" crossorigin="">
 			I used THREE.js to create this 3D scene of property values. There is no color in the image above, yet.
 		</div>
 		<div>
 			It took a long time until I found a way to calculate the leafiness of a property. First, I had to simplify the tree canopy data, but this time I used shapely, fiona, GEOS and PySAL from Python. It turned out that some shapes in the file were invalid, which could be fixed. Before:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/9_canopy_before.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/9_canopy_before.png" crossorigin="">
 			After:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/10_canopy_simplified.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/10_canopy_simplified.png" crossorigin="">
 			I looks simply sharpened, but actually the shapes that make up the canopy are merged and simplified, or removed, if they are small islands.
 		</div>
 		<div>
 			The actual computation of the leafiness had high memory demands, so that I used the Google Compute Engine to run calculations. Each patch of green has an impact on the surrounding properties, depending on the size of the patch. This way a big park increases the leafiness in a wider area by a bigger amount than a single street tree. Here is the result:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/11_tree_density.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/11_tree_density.png" crossorigin="">
 		</div>
 		<div>
 			Finally, I created the Leafiness Index, which mainly scales the raw values logarithmically. I ran a linear regression on leafiness vs. property value which yielded the results you can see in the main part of the page. To speed the drawing of the box plot chart with the regression line up, only a subset of points is used. Additionally, an octree improves the performance of displaying detail information on the 3D map. Here is the full plot:
-			<img src="https://storage.googleapis.com/sftrees3d/sketches/12_regression.png" crossorigin="">
+			<img is="lazyload-image" src="https://storage.googleapis.com/sftrees3d/sketches/12_regression.png" crossorigin="">
 		</div>
 	</div>
 	<div id="licenses" class="swap">
