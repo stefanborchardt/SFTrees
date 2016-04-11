@@ -13,7 +13,7 @@
 <script src="https://storage.googleapis.com/sftrees3d/box.js"></script>
 <div id="nav">
 	<h1>Hyperlocal Impact of the <br>Tree Canopy on Real Estate Value in <br>San Francisco</h1> 
-	<div><a href="" onclick="toDesign();return false;" class="navlink">Design</a><a onclick="toLicenses();return false;" href="" class="navlink">Licenses</a><a onclick="toFeedback();return false;" href="" class="navlink">Feedback</a></div>
+	<div><a href="" onclick="toDesign();return false;" class="navlink">Design</a><a onclick="toLicenses();return false;" href="" class="navlink">Sources</a><a onclick="toFeedback();return false;" href="" class="navlink">Feedback/ Legal</a></div>
 </div>
 <div id="cont-wrapper">
 	<div id="cont"></div>
@@ -26,7 +26,7 @@
 			Before that, the next plot shows the span of real estate values for each level of leafiness. In addition, a green-dotted line shows how the house price increases on average with leafiness. One more index point means plus <b>$ 15,000</b> on average.
 		</div>
 		<div>
-			For background information on how these visualizations were created, please see the Design section.
+			For background information on how these visualizations were created, please see the <a href="" onclick="toDesign();return false;">Design</a> section.
 		</div>
 	</div>
 	<div id="design" class="swap">
@@ -36,7 +36,7 @@
 			You can see the species and age of the street trees encoded as color and size. I spent some time learning more about street trees and to clean the data.
 		</div>
 		<div>
-			I noticed that trees in parks were missing and during further research had to learn that only about 20% of all trees are street trees. Luckily, I found non-discriminatory data about the tree canopy, which included parks, private trees and the street trees. It has a much finer resolution that the usual land coverage satellite images, because it was produced using LiDAR and aerial photography. 
+			I noticed that trees in parks were missing and during further research had to learn that only about 20% of all trees are street trees. Luckily, I found non-discriminatory data about the tree canopy, which included parks, private trees and the street trees. It has a much finer resolution that the usual land coverage satellite images, because it was produced using LiDAR and aerial photography. The Farallon Islands were spatial outliers I removed, and I also did not consider Treasure Island.
 			<img src="" crossorigin="">
 			The data came in shapefile format, which is common in geographical information systems. I used TileMill to create the image above.
 		</div>
@@ -61,21 +61,21 @@
 			So I decided to go into more detail.
 		</div>
 		<div>
-			There is data available on the value of each property in San Francisco from the Property Assessment Roll. Cleaning the data was somewhat challenging because addresses seem to be entered manually, contained indicators for vacant lots and apartment numbers. Additionally, I had to geocode the addresses. Here is a snapshot of what I had while the geocoding progressed.
+			There is data available on the value of each property in San Francisco from the Property Assessment Roll. The values I used are from 2013, but change between years is generally slow. Cleaning the data was somewhat challenging because addresses seem to be entered manually, contained indicators for vacant lots and apartment numbers. Additionally, I had to geocode the addresses. Here is a snapshot of what I had while the geocoding progressed.
 			<img src="" crossorigin="">
-			After cleaning, geocoding, and merging apartments, I had about 150,000 properties with information about the assessed value of the real estate and the improvements. I removed properties of less than $ 20,000 and the top 1%. There are more values in the assessment roll, which I discarded after learning about the property assessment process.
+			After cleaning, geocoding, and merging apartments, I had about 150,000 properties with information about the assessed value of the real estate and the improvements. I removed properties of less than $ 20,000 and the top 1%. This excluded some commercial propeties around Market Street. There are more financial values for the properties in the assessment roll, which I discarded after learning about the property assessment process.
 		</div>
 		<div>
 			Now I wanted to bring two variables on a map. Because of the density of the properties I could not use size beside color, so I decided to go up:
 			<img src="" crossorigin="">
-			I used THREE.js to create this 3D scene of property values. There is no color in the image above, yet.
+			I used THREE.js to create this 3D scene of property values. There is no color in the image above, yet, and the texture of the tree canopy is still missing.
 		</div>
 		<div>
-			It took a long time until I found a way to calculate the leafiness of a property. First, I had to simplify the tree canopy data, but this time I used shapely, fiona, GEOS and PySAL from Python. It turned out that some shapes in the file were invalid, which could be fixed. Before:
+			It took a long time until I found a way to calculate the leafiness of a property. First, I had to simplify the tree canopy data. This time I used shapely, fiona, GEOS and PySAL from Python in order to operate on a per-shape basis and so that I could keep the total canopy area approximately unchanged. It turned out that some shapes in the file were invalid, which could be fixed. Before:
 			<img src="" crossorigin="">
 			After:
 			<img src="" crossorigin="">
-			I looks simply sharpened, but actually the shapes that make up the canopy are merged and simplified, or removed, if they are small islands.
+			I looks simply sharpened, but actually the shapes that make up the canopy are merged and simplified, or removed, if they are small isolated islands.
 		</div>
 		<div>
 			The actual computation of the leafiness had high memory demands, so that I used the Google Compute Engine to run calculations. Each patch of green has an impact on the surrounding properties, depending on the size of the patch. This way a big park increases the leafiness in a wider area by a bigger amount than a single street tree. Here is the result:
@@ -84,6 +84,10 @@
 		<div>
 			Finally, I created the Leafiness Index, which mainly scales the raw values logarithmically. I ran a linear regression on leafiness vs. property value which yielded the results you can see in the main part of the page. To speed the drawing of the box plot chart with the regression line up, only a subset of points is used. Additionally, an octree improves the performance of displaying detail information on the 3D map. Here is the full plot:
 			<img src="" crossorigin="">
+			The real chart is plotted with D3 in the browser with data from a 8MB CSV, which also contains the coordinates and detail information for the 3D map. Because of the file size I chose pre-loading for the CSV and lazy-loading for the images. 
+		</div>
+		<div>
+			Most of the source code for this project is available at <a href="https://github.com/stefanborchardt/SFTrees">GitHub</a>.
 		</div>
 	</div>
 	<div id="licenses" class="swap">
@@ -100,8 +104,148 @@
 			<li>D3 Box Plot: https://bl.ocks.org/mbostock/4061502 - GNU GPLv3</li>
 		</ul>
 	</div>
-	<div id="feedback" class="swap">TODO</div>
+	<div id="feedback" class="swap">
+		<div>
+			<b>Legal Information</b>
+		</div>
+		<div>
+			Stefan Borchardt<br>
+			Softwareentwicklung<br>
+			&#x42;&#x6F;&#x74;&#x74;&#x72;&#x6F;&#x70;&#x65;&#x72;&#x20;&#x57;&#x65;&#x67;&#x20;&#x31;&#x33;<br>
+			13507 Berlin<br>
+			<a href="mailto:&#115;&#116;&#101;&#102;&#097;&#110;&#046;&#098;&#111;&#114;&#099;&#104;&#097;&#114;&#100;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#115;&#116;&#101;&#102;&#097;&#110;&#046;&#098;&#111;&#114;&#099;&#104;&#097;&#114;&#100;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a><br>
+			&#x2B;&#x34;&#x39;&#x28;&#x30;&#x29;&#x33;&#x30;&#x20;&#x33;&#x37;&#x34;&#x34;&#x20;&#x33;&#x33;&#x30;&#x36;<br>
+			USt-IdNr. DE293082534<br>
+		</div>
+		<div>
+			<b>Feedback obtained on previous version:</b>
+		</div>
+		<div>
+			<div>
+			<u>Udacity forum</u>
+</div>
+		<div>
+alexander_nenkov
+It would be much better if zones remain highlighted when you mousover. They just blink now.
+</div>
+		<div>
+Hello @stefan_153703.
+
+I took a look at your visualization. 
+I have a bunch of things to say, many are kind of critical. I hope you don't take them negatively but as something to consider, and maybe improve on.
+
+First of all something very positive: I found it exciting that you took an unconventional dataset for your project. It's sweet and interesting to go explore and chart the uncharted : )
+
+Now about how I perceive the outcome.
+
+the correlation
+
+I don't really find it very striking how the tree canopy seems to correlate to the median income. Okay, there are the areas near the park and the Golden Gate bridge (also very park-y) where there seems to be a bit of a correlation.
+However, there's the port area that is very dark with income, but not very lit up with trees.
+
+I mean, I think you agree that it's more reasonable to assume that people with higher income prefer to move to places where there is more "nature", more space (and often more trees ; ). But I guess another aspect to consider is also that they move to places which are of high reputation. I'd attribute some of the high income area around the Golden Gate bridge also to this.
+But I definitely think the quality of living is the most important part in it all.
+
+Do you have data on the density of person per square meter of the separate districts? (I'd assume a higher correlation there)
+
+But I understand that you were also making this on purpose for the non-straightforward comparison (and I hope also for the fun in it ; )
+
+where are you in this?
+
+In any case, I believe that you are missing an explanatory paragraph where you'd voice your attempt, but also make it clear what you believe are other possible conclusions that can be drawn from the data.
+
+You leave the whole project very open for the user to explore, and apart from the title and what's present on the map, you're not giving any leads or hints. So it's very user-driven, which I guess is your design choice and probably also the reason why you didn't include an explanatory paragraph.
+
+Maybe that's okay, but I was missing some of your words that would take me off the "but but but, here! this! and here that!" -train that I went on when I looked at your visualization.
+I'd have wanted you to be my friend-in-words, who knows about some potential shortcomings in the story, so that we can "look at it together and smile". Otherwise (as you can see) I am very pushed to write you a lengthy feedback with all the things that I noticed and that I'm now not sure whether you've done them by choice or they just happened to you.
+
+some stylistic things
+
+Some scatters of tree canopy feel they are misleading, because it feels that the orange color sticks out more in the dark areas than it does in the more light-gray ones.
+
+Could you also display the % of canopy coverage per area in your hover event? Otherwise I come up with this doubt because of the colors interfering, and I have no way to prove myself right or wrong. You basically lose a bit of my trust through this inability to check back.
+I guess I would try to look for a different way to display one of the values, in order to avoid the color-doubt completely. But if you don't want to do this, then I'd think it would be good to provide a way for the user to check back on the actual numbers.
+
+Staying with the colors: why orange instead of green?
+
+Also, I found it confusing that I am not able to scroll out completely to see the whole map at once. It seems that you limited the size of the svg and something about the max-out-zoom(?) so that it just doesn't fit.
+Maybe I was doing something wrong, but it stayed also when clicking Open in the bl.ocks window.
+
+I think otherwise your choice of plotting is intuitively understandable, that means: I know what represents the trees and I understand the income shades. So something is good there, when taken apart, but for me it is sadly overshadowed by the doubt arising from the color-interference.
+
+Phu... That's it for now... : )
+
+I actually looked at your project already quite a while ago, but I didn't know exactly how to express my thoughts. I knew some of your posts from the g+ community and I often found them very interesting. I think I was quite excited to see your project, and then a little bit disappointed : /
+
+I guess what I'm saying is "Come on! I believe that you can do better!"
+
+...
+
+I hope this post and feedback is useful, even though it has this non-professional note to it : )
+Anyways, I wish you good luck, and if you'll work on it more and want me to comment, I'd be glad to.
+Also if something I said sounds very wrong or unclear, do ask back.
+Maybe I am wrong or misunderstood something. In any case I'm glad to clarify.
+
+All the best to you! : )
+</div>
+		<div>
+		<u>G+</u>
+</div>
+		<div>
+
+Thomas Dräbing
+Very nice visualization, but one thing is missing: A legend for the census data. Without it it is difficult to interprete.
+</div>
+		<div>
+Richard Dean
+Visually very nice, but shouldn't the title be 'Can only rich people live near trees?' ;)
+As Thomas said, a legend would be very useful - what does the colour of each tract mean? The tooltip is ok, but often it gets in the way of exploring the data - maybe a fixed position info box could be better? 
+The zoom functionality is really good, but there's no hint (without looking at the code) that you can do it.  
+</div>
+		<div>
+Thomas Dräbing
+For me the tooltips do not work (Windows 10, Firefox 44.0.2) but it throws an error: TypeError: svg.node(...).getIntersectionList is not a function
+in mmHandler() line 113
+and $/<() line 1
+
+The div for the tooltip is just visible in the upper left corner doing nothing.
+</div>
+		<div>
+Stefan Borchardt
++Thomas Dräbing, yes, my current solution has the raster tiles on top of the vector layer, which makes displaying the tooltip a little more complicated than it should be. But I have another idea how to tackle that, I hope it will work. 
+Stefan Borchardt
++Richard Dean, I changed the explanatory text a little. Do you have an idea what symbol would indicate zoomability? 
+</div>
+		<div>
+Richard Dean
+I've been working on d3.carto - that has some basic zoom/pan controls which are the sort of thing i was thinking of... http://bl.ocks.org/emeeks/b60d4c31f5802a120456
+</div>
+		<div>
+Stefan Borchardt
+Thanks for the suggestion. It seems I can't use d3.carto, though, because I had to rasterize one vector layer for performance reasons. I could have tried to upload the raster tiles to Mapbox or set up my own tile server, but I sticked with d3.geo.tile. Maybe I can try to transfer the controls only.
+
+</div>
 	
+			<div>
+<u>Mail</u>
+</div>
+		<div>
+Zahra:
+I saw your work, that was interesting. I do not have experience in this field, but some suggestion:
+
+It would be better if you show your inputs as well! What was the raw data? 
+and in a chart maybe you can show your result (average of tree canopy respect to income)more clear, for example if (x-axis: income), (y-axis: average of tree canopy ) 
+
+		</div>
+	</div>
+	<div id="outro" class="swap">
+		<div>
+			The good news is that about half of the suitable lots for street trees are vacant. You can find more benefits of urban trees at <a href="http://www.fuf.net/benefits-of-urban-greening/">Friends of the Urban Forest</a>. <a href="http://urbanforestmap.org/">Urban Forest Map</a> will give you more information on the status of street trees. A great help for finding a suitable tree is <a href="https://selectree.calpoly.edu/">SelecTree</a>.
+		</div>
+		<div>
+			The bad news is that, depending on the species, trees will need 30 years to reach a decent size.
+		</div>
+	</div>
 </div>
 <div id="next"><a href="" onclick="" class="nextlink" id="nxtlnk">&gt;</a></div>
 <script src="sftrees.js"></script>
