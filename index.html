@@ -3,6 +3,7 @@
 <head>
     <title>SFTrees</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="sftrees.css" />
 </head>
 <body>
@@ -12,7 +13,7 @@
 <script src="https://storage.googleapis.com/sftrees3d/threeoctree.js"></script>
 <script src="https://storage.googleapis.com/sftrees3d/box.js"></script>
 <div id="nav">
-	<h1>Hyperlocal Impact of the <br>Tree Canopy on Real Estate Value in <br>San Francisco</h1> 
+	<h1><a href="" onclick="toIntro();return false;">Hyperlocal Impact of the <br>Tree Canopy on Real Estate Value in <br>San Francisco</a></h1> 
 	<div><a href="" onclick="toDesign();return false;" class="navlink">Design</a><a onclick="toLicenses();return false;" href="" class="navlink">Sources</a><a onclick="toFeedback();return false;" href="" class="navlink">Feedback/ Legal</a></div>
 </div>
 <div id="cont-wrapper">
@@ -23,11 +24,12 @@
 			To see if the leafy neighbourhoods of the city are really more expensive I combined <b>high resolution data</b> of the tree canopy with information about the assessed real estate value. The Leafiness Index I calculated <b>for each property</b> by only considering the green that is close to the house, not somewhere in the neighbourhood, will be yours to explore in a minute.
 		</div>
 		<div>
-			Before that, the next plot shows the span of real estate values for each level of leafiness. In addition, a green-dotted line shows how the house price increases on average with leafiness. One more index point means plus <b>$ 15,000</b> on average.
+			Before that, the next plot shows the span of real estate values for each level of leafiness. In addition, a green-dotted line shows how the house price increases on average with leafiness. One more index point means plus <b>$15,815</b> on average.
 		</div>
 		<div>
 			For background information on how these visualizations were created, please see the <a href="" onclick="toDesign();return false;">Design</a> section.
 		</div>
+		<div id="intro-next"><a href="" onclick="toPlot();return false;" class="nextlink" id="intro-nxtlnk">&gt;</a></div>
 	</div>
 	<div id="design" class="swap">
 		<div>
@@ -63,12 +65,12 @@
 		<div>
 			There is data available on the value of each property in San Francisco from the Property Assessment Roll. The values I used are from 2013, but change between years is generally slow. Cleaning the data was somewhat challenging because addresses seem to be entered manually, contained indicators for vacant lots and apartment numbers. Additionally, I had to geocode the addresses. Here is a snapshot of what I had while the geocoding progressed.
 			<img src="" crossorigin="">
-			After cleaning, geocoding, and merging apartments, I had about 150,000 properties with information about the assessed value of the real estate and the improvements. I removed properties of less than $ 20,000 and the top 1%. This excluded some commercial propeties around Market Street. There are more financial values for the properties in the assessment roll, which I discarded after learning about the property assessment process.
+			After cleaning, geocoding, and merging apartments, I had about 150,000 properties with information about the assessed value of the real estate and the improvements. I removed properties of less than $ 20,000 and the top 1%. This excluded some commercial properties around Market Street. There are more financial values for the properties in the assessment roll, which I discarded after learning about the property assessment process.
 		</div>
 		<div>
 			Now I wanted to bring two variables on a map. Because of the density of the properties I could not use size beside color, so I decided to go up:
 			<img src="" crossorigin="">
-			I used THREE.js to create this 3D scene of property values. There is no color in the image above, yet, and the texture of the tree canopy is still missing.
+			I used THREE.js to create this 3D scene of property values. There is no color in the image above, yet, and the texture of the tree canopy is still missing. It is hard to differentiate between heights for most peole, so I can only encode few distinct values by height.
 		</div>
 		<div>
 			It took a long time until I found a way to calculate the leafiness of a property. First, I had to simplify the tree canopy data. This time I used shapely, fiona, GEOS and PySAL from Python in order to operate on a per-shape basis and so that I could keep the total canopy area approximately unchanged. It turned out that some shapes in the file were invalid, which could be fixed. Before:
@@ -82,9 +84,16 @@
 			<img src="" crossorigin="">
 		</div>
 		<div>
-			Finally, I created the Leafiness Index, which mainly scales the raw values logarithmically. I ran a linear regression on leafiness vs. property value which yielded the results you can see in the main part of the page. To speed the drawing of the box plot chart with the regression line up, only a subset of points is used. Additionally, an octree improves the performance of displaying detail information on the 3D map. Here is the full plot:
+			Finally, I created the Leafiness Index, which mainly scales the raw values logarithmically. A simple scatter plot did not reveal insights, so grouping the data by the Leafiness Index and using a box plot chart enabled the understanding of the influence of the tree canopy. I ran a linear regression on leafiness vs. property value which yielded the results you can see in the main part of the page. 
+			<pre>Real Estate Value = $15,815 * Leafiness Index + $565,937; r² = .003</pre> 
+			When running the regression with the raw leafiness, 
+			<pre>r² = .026</pre>
+			which means that the raw leafiness explains 2.6% of the house price. I decided to plot the regression with raw values and to use the LI-based number in the text, because I think it can be understood more intuitively. 
+		</div>
+		<div>
+			To speed the drawing of the box plot chart with the regression line up, only a subset of points is used. Here is the plot with all points:
 			<img src="" crossorigin="">
-			The real chart is plotted with D3 in the browser with data from a 8MB CSV, which also contains the coordinates and detail information for the 3D map. Because of the file size I chose pre-loading for the CSV and lazy-loading for the images. 
+			The real chart is plotted with D3 in the browser with data from a 8MB CSV, which also contains the coordinates and detail information for the 3D map. Because of the file size I chose pre-loading for the CSV and lazy-loading for the images. Additionally, an octree improves the performance of displaying detail information on the 3D map. To better see the differences between the Leafiness Index values, the heights are squared for display.
 		</div>
 		<div>
 			Most of the source code for this project is available at <a href="https://github.com/stefanborchardt/SFTrees">GitHub</a>.
@@ -243,10 +252,10 @@ and in a chart maybe you can show your result (average of tree canopy respect to
 	</div>
 	<div id="outro" class="swap">
 		<div>
-			The good news is that about half of the suitable lots for street trees are vacant. You can find more benefits of urban trees at <a href="http://www.fuf.net/benefits-of-urban-greening/">Friends of the Urban Forest</a>. <a href="http://urbanforestmap.org/">Urban Forest Map</a> will give you more information on the status of street trees. A great help for finding a suitable tree is <a href="https://selectree.calpoly.edu/">SelecTree</a>.
+			The good news is that about half of the suitable lots for street trees are vacant. You can find <b>more benefits</b> of urban trees at <a href="http://www.fuf.net/benefits-of-urban-greening/">Friends of the Urban Forest</a>. <a href="http://urbanforestmap.org/">Urban Forest Map</a> will give you more information on the status of street trees. A great help for finding a suitable tree is <a href="https://selectree.calpoly.edu/">SelecTree</a>.
 		</div>
 		<div>
-			The bad news is that, depending on the species, trees will need 30 years to reach a decent size.
+			Depending on the species, trees will need 30 years to reach a decent size, though.
 		</div>
 	</div>
 </div>
