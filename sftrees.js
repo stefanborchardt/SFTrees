@@ -14,30 +14,68 @@ var bounds = [-122.5149, 37.7070, -122.359, 37.8120], // EPSG:4326 left, bottom,
     sceneWidth = 2048,
     sceneHeight = sceneWidth / (boundsWidth / boundsHeight);
 
-var planeMesh;
 var baseUrl = "https://storage.googleapis.com/sftrees3d/";
 //var baseUrl = "";
+
+var planeMesh;
+var plotData;
+var regData; 
+var data;
+
 var loader = new THREE.TextureLoader();
     loader.crossOrigin = "";
     loader.load(baseUrl + "sftrees_map.png", function(texture) {
         var planeMat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
             map: texture,
-            opacity: 0.3
+            side: THREE.DoubleSide
         });
         var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
         planeMesh = new THREE.Mesh(planeG, planeMat);
         
+        d3.csv(baseUrl + "datar.csv")
+            .on("progress", function() {
+                var ip = d3.interpolate(progress, 0.2 + 0.8*d3.event.loaded / d3.event.total);
+                d3.transition().tween("progress", function() {
+                    return function(t) {
+                        progress = ip(t);
+                        foreground.attr("d", arc.endAngle(2 * Math.PI * progress));
+                        text.text(formatPercent(progress));
+                    };
+                });
+            })
+            .get(function(error, loaded) {
+                
+                /*========= MAIN =============*/
+
+                data = loaded;
+
+                makeBars(data, 20);
+
+                var ppData = preparePlot(data);
+                plotData = ppData[0];
+                regData = ppData[1];
+
+                meter.transition().attr("transform", "scale(0)");
+                d3.select("svg").transition().remove().each("end", toIntro);
+
+                
+            });
+
     });
 
-function transform(value) {
+function transformValue(value) {
     return Math.pow(value / 425000.0, 0.5);
 }
 
+function transformTrees(trees) {
+    return Math.pow(0.67 + trees/3.0, 2)
+}
+
 // polylinear scale white - yellow - orange - red - black
+var colorDomainCols = ['#ffffff', '#ffeda0', '#feb24c', '#f03b20', '#000000'];
 var colorScale = d3.scale.linear()
-    .domain([transform(20000), transform(73500), transform(425000), transform(1346000), transform(8000000)])
-    .range(['#ffffff', '#ffeda0', '#feb24c', '#f03b20', '#000000']);
+    .domain([transformValue(20000), transformValue(73500), transformValue(425000), transformValue(1346000), transformValue(8000000)])
+    .range(colorDomainCols);
 
 
 var scene, octree;
@@ -70,11 +108,11 @@ function makeBars(data, percent) {
             // only use <percent>%
             return;
         }
-        var value = transform(f.value),
+        var value = transformValue(f.value),
             sceneX = (f.x - bounds[0]) / sceneWAsp - sceneWidth / 2,
             sceneY = (f.y - bounds[1]) / sceneHAsp - sceneHeight / 2,
             // to differiante better visually, transform to (1..4)^2
-            sceneZ = Math.pow(0.67 + f.trees/3, 2);
+            sceneZ = transformTrees(f.trees);
 
         var material = new THREE.MeshPhongMaterial({
             color: colorScale(value)
@@ -184,18 +222,64 @@ function render() {
     animate();
 
     // display infoboxes
-    contentDiv.selectAll("#details")
-        .data([""])
-        .enter()
+    contentDiv
         .append("div")
         .attr("id", "details")
+        .attr("class", "infobox")
         .text("Rotate and Zoom, Pan with right mouse button. Hover for details.")
 
-    var randDiv = contentDiv.selectAll("#random")
-        .data([""])
+    var legendSvg = contentDiv
+        .append("div")
+        .attr("id", "legend")
+        .attr("class", "infobox")
+        .append("svg")
+        .attr("id", "lgnd-svg");
+
+    var legendCol = legendSvg
+        .append("g")
+        .attr("id", "lgnd-colors");
+    var legendHeight = legendSvg.append("g")
+        .attr("id", "lgnd-heights");
+
+    legendCol.selectAll("rect")
+        .data(colorDomainCols)
         .enter()
+        .append("rect")
+        .attr("width", 32)
+        .attr("height", 10)
+        .attr("y", 0)
+        .attr("fill", function(d) {return d;})
+        .attr("x", function(d, i) {return i*32;});
+
+    legendCol.selectAll("text")
+        .data(["20K", "73K", "425K", "1.4M", " 8M"])
+        .enter()
+        .append("text")
+        .attr("y", 20)
+        .attr("x", function(d, i) {return i*32 + 6;})
+        .text(function(d, i) {return d;});
+
+    legendHeight.selectAll("rect")
+        .data([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        .enter()
+        .append("rect")
+        .attr("width", 8)
+        .attr("y",  function(d) {return 68 - transformTrees(d)*3;})
+        .attr("height", function(d) {return transformTrees(d)*3;})
+        .attr("x", function(d, i) {return i*16 + 8;});
+
+    legendHeight.selectAll("text")
+        .data([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        .enter()
+        .append("text")
+        .attr("y", 78)
+        .attr("x", function(d, i) {return i*16 + 7;})
+        .text(function(d, i) {return d;});
+
+    var randDiv = contentDiv
         .append("div")
         .attr("id", "random")
+        .attr("class", "infobox")
         .text("Choose another random subset: ")
 
     randDiv.append("a")
@@ -389,7 +473,7 @@ var text = meter
     .attr("text-anchor", "middle")
     .attr("dy", ".35em");
 
-/*======================== preloading, display ====================================*/
+/*======================== static content, navigation ====================================*/
 
 function resetDivsGetNext() {
     var divs = document.getElementsByClassName("swap")
@@ -420,7 +504,7 @@ function toDesign() {
     resetDivsGetNext();
     var div = document.getElementById("design")
     div.style.display = "block";
-    // set serc to images - lazy loading
+    // lazy load images
     d3.select("#design")
         .selectAll("img")
         .each(function(d, i){
@@ -452,20 +536,16 @@ function toFeedback() {
     div.style.display = "block";
 }
 
-var plotData;
-var regData; 
-
 function toPlot() {
     resetDivsGetNext().setAttribute("onclick", "toRender(20);return false;");
     
     showPlot(plotData, regData);
 }
 
-var data;
 var firstRun = true;
 
 function toRender(percent) {
-    resetDivsGetNext().style.display = "none";
+    resetDivsGetNext().setAttribute("onclick", "toOutro();return false;");
 
     if (firstRun) {
         firstRun = false;
@@ -475,34 +555,12 @@ function toRender(percent) {
     render();
 }
 
+function toOutro() {
+    resetDivsGetNext().style.display = "none";
+    var div = document.getElementById("outro")
+    div.style.display = "block";
+}
 
-d3.csv(baseUrl + "datar.csv")
-    .on("progress", function() {
-        var ip = d3.interpolate(progress, d3.event.loaded / d3.event.total);
-        d3.transition().tween("progress", function() {
-            return function(t) {
-                progress = ip(t);
-                foreground.attr("d", arc.endAngle(2 * Math.PI * progress));
-                text.text(formatPercent(progress));
-            };
-        });
-    })
-    .get(function(error, loaded) {
-        
-        /*========= MAIN =============*/
 
-        data = loaded;
-
-        makeBars(data, 20);
-
-        var ppData = preparePlot(data);
-        plotData = ppData[0];
-        regData = ppData[1];
-
-        meter.transition().attr("transform", "scale(0)");
-        d3.select("svg").transition().remove().each("end", toIntro);
-
-        
-    });
 
 
