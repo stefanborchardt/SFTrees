@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="sftrees.css" />
 </head>
 <body>
+<script>
+	var host = "stefanborchardt.github.io"
+	if (window.location.host == host && window.location.protocol != "https:") {
+  		window.location.protocol = "https:"
+	}
+</script>
 <script src="https://storage.googleapis.com/sftrees3d/d3.min.js" charset="utf-8"></script>
 <script src="https://storage.googleapis.com/sftrees3d/three.min.js"></script>
 <script src="https://storage.googleapis.com/sftrees3d/OrthographicTrackballControls.js"></script>
