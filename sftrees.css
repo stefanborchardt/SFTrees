@@ -1,7 +1,7 @@
 /*=============== page layout ===============*/
 html, body {
 	height: 100%;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: 'Roboto', sans-serif;
 	resize: none;
 }
 
@@ -12,13 +12,27 @@ body {
 	margin: 0;
 }
 
+a {
+	color: black;
+}
+
 h1 {
 	margin-left: 20%;
 	vertical-align: middle;
+	font-size: 3vh;
 }
 
-a {
-	color: black;
+h1 a {
+	text-decoration: none;
+}
+
+#nav {
+	margin:auto;
+	width: 80%;
+	height: 20%;
+	resize: none;
+	border-bottom: 3px solid #ccc;
+	overflow: hidden;
 }
 
 .navlink {
@@ -45,29 +59,21 @@ a {
 	opacity: none;
 }
 
-
-#nav {
-	margin:auto;
-	width: 80%;
-	height: 20%;
-	resize: none;
-	border-bottom: 3px solid #ccc;
-	overflow: hidden;
-}
-
 #next {
 	position: absolute;
 	top: 49%;
 	left: 91%;
 	width: 8%;
 	justify-content: center;
+	padding: 0;
 }
+
 .nextlink {
 	font-size: 150px;
 	font-weight: bold;
 	color: white;
-	opacity: 0.9;
 	text-decoration: none;
+	text-shadow: 3px 3px black;
 	display: none;
 }
 
@@ -119,7 +125,6 @@ a {
 	height: 80px;
 	padding: 10px;
 	justify-content: center;
-	font-size: 16px;
 }
 
 #legend {
@@ -141,6 +146,7 @@ a {
 	right:0;
 	top: 0;
 	font-weight: bold;
+	font-size: 16px;
 }
 
 .detail {
@@ -151,6 +157,7 @@ a {
 	float: right;
 	right:0;
 	bottom: 0;
+	font-size: 13px;
 }
 .randlink {
 	color: black;
@@ -204,4 +211,8 @@ a {
  
 .x.axis path { 
   display: none;
+}
+
+.box-explain {
+	font-size: 14px;
 }

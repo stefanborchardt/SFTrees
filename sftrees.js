@@ -1,5 +1,6 @@
 "use strict";
 
+// the div intended for content, as DOM and D3 
 var contentDiv = d3.select("#cont");
 var domContDiv = document.getElementById("cont");
 
@@ -7,19 +8,20 @@ var width = domContDiv.clientWidth,
     height = domContDiv.clientHeight;
 
 /*======================== build 3D scene ====================================*/
-
-var bounds = [-122.5149, 37.7070, -122.359, 37.8120], // EPSG:4326 left, bottom, right, top
+// spatial coordinates EPSG:4326 left, bottom, right, top
+var bounds = [-122.5149, 37.7070, -122.359, 37.8120], 
     boundsWidth = bounds[2] - bounds[0],
-    boundsHeight = bounds[3] - bounds[1],
-    sceneWidth = 2048,
+    boundsHeight = bounds[3] - bounds[1];
+// the internal resolution of the 3D scene
+var sceneWidth = 2048,
     sceneHeight = sceneWidth / (boundsWidth / boundsHeight);
 
 var baseUrl = "https://storage.googleapis.com/sftrees3d/";
 //var baseUrl = "";
 
-var planeMesh;
+var textureMesh;
 var plotData;
-var regData; 
+var regrData; 
 var data;
 
 var loader = new THREE.TextureLoader();
@@ -30,10 +32,11 @@ var loader = new THREE.TextureLoader();
             side: THREE.DoubleSide
         });
         var planeG = new THREE.PlaneBufferGeometry(sceneWidth, sceneHeight);
-        planeMesh = new THREE.Mesh(planeG, planeMat);
-        
+        textureMesh = new THREE.Mesh(planeG, planeMat);
+        // after texture has loaded, load the csv - otherwise timing issues 
         d3.csv(baseUrl + "datar.csv")
             .on("progress", function() {
+                // display progress indicator, see close to bottom of file
                 var ip = d3.interpolate(progress, d3.event.loaded / d3.event.total);
                 d3.transition().tween("progress", function() {
                     return function(t) {
@@ -48,14 +51,16 @@ var loader = new THREE.TextureLoader();
                 /*========= MAIN =============*/
 
                 data = loaded;
-
+                // prepare 3D map
                 makeBars(data, 20);
-
+                // prepare boxplot
                 var ppData = preparePlot(data);
                 plotData = ppData[0];
-                regData = ppData[1];
-
+                regrData = ppData[1];
+                // remove progress circle
                 meter.transition().attr("transform", "scale(0)");
+
+                // show the intro screen
                 d3.select("svg").transition().remove().each("end", toIntro);
 
                 
@@ -64,10 +69,13 @@ var loader = new THREE.TextureLoader();
     });
 
 function transformValue(value) {
+    // transforms the real estate value by dividing through the median and taking sqrt
     return Math.pow(value / 425000.0, 0.5);
 }
 
 function transformTrees(trees) {
+    // transforms the leafiness index to differantiate better visually, transform to (1..4)^2
+    // the index has been calculated from the raw value by logarithm
     return Math.pow(0.67 + trees/3.0, 2)
 }
 
@@ -86,6 +94,7 @@ var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
 dirLight.position.set(0, 0, 100).normalize();
 
 function emptyScene() {
+    // sets up or clears the scene
     scene = new THREE.Scene();
     scene.add(ambLight);
     scene.add(dirLight);
@@ -93,6 +102,8 @@ function emptyScene() {
 }
 
 function makeBars(data, percent) {
+    // puts all bars (boxes/ columns) on the map and in the search index
+    // using geometry instancing and buffer geometry for speed
 
     emptyScene();
 
@@ -101,6 +112,7 @@ function makeBars(data, percent) {
 
     var geometry = new THREE.BoxGeometry(1, 1, 1);
 
+    // separate thousands
     var moneyFormat = d3.format(",");
 
     data.forEach(function(f) {
@@ -111,7 +123,6 @@ function makeBars(data, percent) {
         var value = transformValue(f.value),
             sceneX = (f.x - bounds[0]) / sceneWAsp - sceneWidth / 2,
             sceneY = (f.y - bounds[1]) / sceneHAsp - sceneHeight / 2,
-            // to differiante better visually, transform to (1..4)^2
             sceneZ = transformTrees(f.trees);
 
         var material = new THREE.MeshPhongMaterial({
@@ -125,6 +136,7 @@ function makeBars(data, percent) {
         mesh.scale.z = sceneZ;
         mesh.matrixAutoUpdate = false;
         mesh.updateMatrix();
+        // add data for detail info
         mesh.userData = {a:f.addr, v: moneyFormat(f.value), t: Math.ceil(f.trees)};
 
         // only put relevant values into index, sphere around box
@@ -136,6 +148,7 @@ function makeBars(data, percent) {
     });
 }
 
+// use orthographic view for better comparability
 var camera = new THREE.OrthographicCamera(sceneWidth / -2, sceneWidth / 2, sceneHeight / 2, sceneHeight / -2, -5000, 5000);
 camera.position.set(0, -5, 10);
 camera.zoom = 3;
@@ -157,6 +170,8 @@ var white = new THREE.Color("#ffffff");
 var black = new THREE.Color("#000000");
 
 function onMouseMove(event) {
+    // displays detail information
+
     mouse.x = (event.offsetX / renderer.domElement.clientWidth) * 2 - 1;
     mouse.y = -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
@@ -178,13 +193,14 @@ function onMouseMove(event) {
             // different addresses geocoded at one location, flicker
             idx = Math.floor(Math.random() * intsLen);
         } 
-        // manage glow of selected box
+        // manage 'glow' of selected box
         if (selectedMesh != null) {
             selectedMesh.material.emissive = black;
         } 
         var mesh = intersections[idx].object;
         selectedMesh = mesh;
         selectedMesh.material.emissive = white;
+
         // display details
         var userData = selectedMesh.userData;
         contentDiv.select("#details")
@@ -203,9 +219,11 @@ function onMouseMove(event) {
 
 }
 
+// to be able to cancel the animation 
 var aniFrameId = null;
 
 function animate() {
+    // runs the 3D map
     controls.update();
     aniFrameId = requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -213,31 +231,34 @@ function animate() {
 }
 
 function render() {
+    // puts all the parts of the 3D map together and displays it
     
-    scene.add(planeMesh);
+    scene.add(textureMesh);
 
     var canvas = domContDiv.appendChild(renderer.domElement);
     canvas.addEventListener('mousemove', onMouseMove, false);
     
     animate();
 
-    // display infoboxes
+    // display infobox for details
     contentDiv
         .append("div")
         .attr("id", "details")
         .attr("class", "infobox")
-        .text("Rotate and Zoom, Pan with right mouse button. Hover for details.")
+        .text("Hover for details");
 
+    // the legend...
     var legendSvg = contentDiv
         .append("div")
         .attr("id", "legend")
         .attr("class", "infobox")
         .append("svg")
         .attr("id", "lgnd-svg");
-
+    // ... for color
     var legendCol = legendSvg
         .append("g")
         .attr("id", "lgnd-colors");
+    // ... and height
     var legendHeight = legendSvg.append("g")
         .attr("id", "lgnd-heights");
 
@@ -250,7 +271,7 @@ function render() {
         .attr("y", 0)
         .attr("fill", function(d) {return d;})
         .attr("x", function(d, i) {return i*32;});
-
+     // ... still drawing the legend...   
     legendCol.selectAll("text")
         .data(["20K", "73K", "425K", "1.4M", " 8M"])
         .enter()
@@ -258,7 +279,7 @@ function render() {
         .attr("y", 20)
         .attr("x", function(d, i) {return i*32 + 6;})
         .text(function(d, i) {return d;});
-
+    // differences in height look smaller in the legend, maybe because the 3D boxes are slimmer?    
     legendHeight.selectAll("rect")
         .data([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         .enter()
@@ -267,7 +288,7 @@ function render() {
         .attr("y",  function(d) {return 68 - transformTrees(d)*3;})
         .attr("height", function(d) {return transformTrees(d)*3;})
         .attr("x", function(d, i) {return i*16 + 8;});
-
+    // last part of legend
     legendHeight.selectAll("text")
         .data([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         .enter()
@@ -276,12 +297,13 @@ function render() {
         .attr("x", function(d, i) {return i*16 + 7;})
         .text(function(d, i) {return d;});
 
+    // box for switching data amount
     var randDiv = contentDiv
         .append("div")
         .attr("id", "random")
         .attr("class", "infobox")
-        .text("Choose another random subset: ")
-
+        .text("Rotate and Zoom, Pan with right mouse button. Or choose another random subset: ")
+    // the various links for random subsets, TODO: change to data/enter   
     randDiv.append("a")
         .attr("href", "")
         .attr("class", "randlink")
@@ -337,13 +359,14 @@ var boxHeight = (height - 2*margin.top);
 //var valueDomain = [20027, 7869264];
 var valueDomain = [0, 3000000];
 
+// called in showplot() - this type of plot draws on box without axes, labels, and fliers
 var chart = d3.box()
     .whiskers(iqr(1.5))
     .width(boxWidth / 2)
     .height(boxHeight)
     .domain(valueDomain);
 
-// for numbers under box plots
+// for leafiness index/ numbers under box plots
 var xOrdScale = d3.scale.ordinal()     
     .domain(d3.range(1, 11))
     .range(d3.range(0.75*boxWidth, 10.75*boxWidth, boxWidth));    
@@ -355,7 +378,7 @@ var xAxis = d3.svg.axis()
 var xLinScale = d3.scale.linear()     
     .domain([1.0, 10.0])
     .range([0.75*boxWidth, 9.75*boxWidth]); 
-
+// real estate values
 var yScale = d3.scale.linear()
     .domain(valueDomain)
     .range([boxHeight, 0]);
@@ -364,8 +387,11 @@ var yAxis = d3.svg.axis()
     .orient("left");
 
 function preparePlot(data) {
+    // returns two arrays from random 10% of data:
+    // plotData contains the real estate values for each leafiness index
+    // regrData contains the fitted real estate value for the raw leafiness on a continuous scale
     var plotData = [];
-    var regData = [];
+    var regrData = [];
     data.forEach(function(f) {
         var value = f.value;
         var trees = Math.ceil(f.trees);
@@ -376,14 +402,15 @@ function preparePlot(data) {
         }
         if (Math.floor(Math.random() * 10) == 0) {
             // only use 10% of points for regression line
-            regData.push({tcont: f.trees, fitted: f.fitted});
+            regrData.push({tcont: f.trees, fitted: f.fitted});
         }
     });
-    return [plotData, regData];
+    return [plotData, regrData];
 }
 
 
-function showPlot(plotData, regData) {
+function showPlot(plotData, regrData) {
+    // draws and shows the box plot with overlay of fitted values
     var svg = contentDiv.append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -394,7 +421,7 @@ function showPlot(plotData, regData) {
     var r = svg.append("g")
         .attr("id", "regr-container")
         .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
-    // boxplots
+    // 10 boxplots, one for each leafiness index
     g.selectAll(".box")
         .data(plotData)
         .enter()
@@ -408,8 +435,8 @@ function showPlot(plotData, regData) {
         })
         .call(chart);
     // regression fitted values    
-     r.selectAll(".dot")
-        .data(regData)
+    r.selectAll(".dot")
+        .data(regrData)
         .enter()
         .append("circle")
         .attr("class", "dot")  
@@ -421,7 +448,7 @@ function showPlot(plotData, regData) {
         .attr("class", "y axis")
         .attr("transform", "translate(" + margin.left + ", " + margin.top + ")")
         .call(yAxis)
-        .append("text") // and text1
+        .append("text") 
         .attr("transform", "rotate(-90)")
         .attr("x", -50)
         .attr("y", 10)
@@ -434,13 +461,33 @@ function showPlot(plotData, regData) {
         .attr("class", "x axis")
         .attr("transform", "translate(" + margin.left + ", " + (boxHeight + margin.top) + ")")
         .call(xAxis)
-        .append("text")             // text label for the x axis
+        .append("text")             
         .attr("x", (width / 2) - margin.left)
         .attr("y",  22)
         .attr("dy", ".71em")
         .style("text-anchor", "middle")
         .style("font-size", "16px") 
         .text("Leafiness Index"); 
+    // explanation
+    var txt = svg.append("text")
+        .attr("class", "box-explain")
+        .attr("x", 150)
+        .attr("y", 60)
+    var texts = [
+        "You can see two things here. If you calculate how (on average)",
+        "house prices change with the raw leafiness you get the green line.",
+        "It's more dense where more values are. Secondly, the boxes allow you",
+        "to see how property values are distributed within each group of leafiness.",
+        "The box marks the medium 50%, the line in it is the median. Values ",
+        "outside a range of 75% (the handles) have been omitted for clarity."]
+    txt.selectAll("tspan")
+        .data(texts)
+        .enter()
+        .append("tspan")
+        .attr("x", 150)
+        .attr("dy", 16)
+        .text(function(d) {return d;});
+
 }
 
 
@@ -476,6 +523,9 @@ var text = meter
 /*======================== static content, navigation ====================================*/
 
 function resetDivsGetNext() {
+    // sets all static content to display:none, stops 3D animation, 
+    // sets next button to start page, empties content div,
+    // and returns the next button to alternate its behavior
     var divs = document.getElementsByClassName("swap")
     for (var i = 0; i < divs.length; i++) {
         divs[i].style.display = "none";
@@ -539,14 +589,14 @@ function toFeedback() {
 function toPlot() {
     resetDivsGetNext().setAttribute("onclick", "toRender(20);return false;");
     
-    showPlot(plotData, regData);
+    showPlot(plotData, regrData);
 }
 
 var firstRun = true;
 
 function toRender(percent) {
     resetDivsGetNext().setAttribute("onclick", "toOutro();return false;");
-
+    // on first run use prepared scene with 20% data
     if (firstRun) {
         firstRun = false;
     } else {
