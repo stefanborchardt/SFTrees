@@ -34,7 +34,7 @@ var loader = new THREE.TextureLoader();
         
         d3.csv(baseUrl + "datar.csv")
             .on("progress", function() {
-                var ip = d3.interpolate(progress, 0.2 + 0.8*d3.event.loaded / d3.event.total);
+                var ip = d3.interpolate(progress, d3.event.loaded / d3.event.total);
                 d3.transition().tween("progress", function() {
                     return function(t) {
                         progress = ip(t);
